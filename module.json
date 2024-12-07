@@ -1,0 +1,17 @@
+{
+  "name": "crossfade-module",
+  "title": "Crossfade Audio Playlist",
+  "description": "Adds crossfade functionality to FoundryVTT playlists, including customizable fade duration.",
+  "version": "1.1.0",
+  "author": "GeanoFee",
+  "minimumCoreVersion": "10",
+  "compatibleCoreVersion": "12",
+  "scripts": ["main.js"],
+  "styles": [],
+  "esmodules": [],
+  "languages": [],
+  "packs": [],
+  "url": "https://your-repository-link.com",
+  "manifest": "https://your-repository-link.com/module.json",
+  "download": "https://your-repository-link.com/crossfade-module.zip"
+}
