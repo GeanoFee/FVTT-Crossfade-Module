@@ -21,18 +21,45 @@ Hooks.once("init", () => {
   });
 
   // Overwrite playlist sound handling
-  libWrapper.register(
-    "crossfade-module",
-    "PlaylistSound.prototype.play",
-    async function (wrapped, ...args) {
+ libWrapper.register(
+  "crossfade-module",
+  "PlaylistSound.prototype.play",
+  async function (wrapped, ...args) {
+    try {
+      console.log("Crossfade Module | Starting play method..."); // Debugging: Meldung, dass die Funktion startet
       const sound = this.sound;
+      console.log("Crossfade Module | Sound Object:", sound); // Debugging: Gibt das Sound-Objekt aus
       if (!sound) return wrapped(...args);
 
       const audio = sound.audio;
-      const fadeDuration = game.settings.get("crossfade-module", "fadeDuration") / 1000; // Convert to seconds
+      const fadeDuration = game.settings.get("crossfade-module", "fadeDuration") / 1000;
+      console.log("Crossfade Module | Audio Object:", audio, "Fade Duration:", fadeDuration); // Debugging: Gibt die Audio-Infos aus
 
-      // Ensure audio exists
       if (!audio) return wrapped(...args);
+
+      // Fade in the track
+      audio.volume = 0;
+      audio.play();
+      fadeVolume(audio, 0, this.volume, fadeDuration);
+
+      // Handle loop crossfade
+      audio.addEventListener("ended", () => {
+        fadeVolume(audio, this.volume, 0, fadeDuration, () => {
+          audio.currentTime = 0;
+          audio.play();
+          fadeVolume(audio, 0, this.volume, fadeDuration);
+        });
+      });
+
+      return Promise.resolve();
+    } catch (err) {
+      console.error("Crossfade Module | Error in play method:", err); // Debugging: Zeigt den Fehler in der Konsole an
+      return wrapped(...args);
+    }
+  },
+  "MIXED"
+);
+
 
       // Fade in the track
       audio.volume = 0;
