@@ -1,78 +1,80 @@
-// Crossfade Module for Foundry VTT
-// Compatible with Foundry VTT Version 12
+// Crossfade Audio Playlist Module - Main Script
+// Adjusted for Foundry VTT Version 12
 
-// Initialize the module
 Hooks.once("init", () => {
   console.log("Crossfade Module | Initializing...");
 
-  // Default settings
-  game.settings.register("crossfade-module", "fadeDuration", {
-    name: "Crossfade Duration",
-    hint: "Set the duration of crossfade in milliseconds.",
+  // Register the setting for crossfade duration
+  game.settings.register("crossfade-module", "crossfadeDuration", {
+    name: "Crossfade Duration (ms)",
+    hint: "Set the duration of the crossfade effect in milliseconds.",
     scope: "world",
     config: true,
     type: Number,
-    default: 5000, // 5 seconds
-    range: {
-      min: 1000,
-      max: 10000,
-      step: 500,
-    },
+    default: 2000,
   });
 
-  // Overwrite playlist sound handling
- libWrapper.register(
-  "crossfade-module",
-  "AudioHelper.prototype.play",
-  async function (wrapped, ...args) {
-    try {
-      console.log("Crossfade Module | Starting play method..."); // Debugging: Meldung, dass die Funktion startet
-      const sound = this.sound;
-      console.log("Crossfade Module | Sound Object:", sound); // Debugging: Gibt das Sound-Objekt aus
-      if (!sound) return wrapped(...args);
+  // Hook into AudioHelper.prototype.play
+  try {
+    libWrapper.register(
+      "crossfade-module",
+      "AudioHelper.prototype.play",
+      function (wrapped, ...args) {
+        console.log("Crossfade Module | Overriding AudioHelper.prototype.play");
 
-      const audio = sound.audio;
-      const fadeDuration = game.settings.get("crossfade-module", "fadeDuration") / 1000;
-      console.log("Crossfade Module | Audio Object:", audio, "Fade Duration:", fadeDuration); // Debugging: Gibt die Audio-Infos aus
+        const [src, options = {}] = args;
 
-      if (!audio) return wrapped(...args);
+        // If no sound source is provided, fallback to default behavior
+        if (!src) return wrapped(...args);
 
-      // Fade in the track
-      audio.volume = 0;
-      audio.play();
-      fadeVolume(audio, 0, this.volume, fadeDuration);
+        // Retrieve crossfade duration from settings
+        const crossfadeDuration = game.settings.get("crossfade-module", "crossfadeDuration");
+        console.log(`Crossfade Module | Crossfade Duration: ${crossfadeDuration}ms`);
 
-      // Handle loop crossfade
-      audio.addEventListener("ended", () => {
-        fadeVolume(audio, this.volume, 0, fadeDuration, () => {
-          audio.currentTime = 0;
-          audio.play();
-          fadeVolume(audio, 0, this.volume, fadeDuration);
-        });
-      });
+        // Handle fade-out of currently playing sound
+        if (this.playing) {
+          const currentAudio = this.playing;
+          const fadeOutInterval = 50;
+          const fadeOutSteps = crossfadeDuration / fadeOutInterval;
+          const fadeOutVolume = currentAudio.volume / fadeOutSteps;
 
-      return Promise.resolve();
-    } catch (err) {
-      console.error("Crossfade Module | Error in play method:", err); // Debugging: Zeigt den Fehler in der Konsole an
-      return wrapped(...args);
-    }
-  },
-  "MIXED"
-);
+          let fadeOutStep = 0;
+          const fadeOut = setInterval(() => {
+            if (fadeOutStep >= fadeOutSteps) {
+              clearInterval(fadeOut);
+              currentAudio.pause();
+              currentAudio.remove();
+            } else {
+              currentAudio.volume -= fadeOutVolume;
+              fadeOutStep++;
+            }
+          }, fadeOutInterval);
+        }
 
-// Fade volume utility
-function fadeVolume(audio, start, end, duration, onComplete) {
-  const step = (end - start) / (duration * 10);
-  let current = start;
+        // Play the new audio with fade-in effect
+        const newAudio = wrapped(...args);
+        const fadeInInterval = 50;
+        const fadeInSteps = crossfadeDuration / fadeInInterval;
+        const fadeInVolume = (options.volume || 1.0) / fadeInSteps;
 
-  const interval = setInterval(() => {
-    current += step;
-    if ((step > 0 && current >= end) || (step < 0 && current <= end)) {
-      clearInterval(interval);
-      audio.volume = end;
-      if (onComplete) onComplete();
-    } else {
-      audio.volume = current;
-    }
-  }, 100);
-}
+        newAudio.volume = 0;
+        let fadeInStep = 0;
+        const fadeIn = setInterval(() => {
+          if (fadeInStep >= fadeInSteps) {
+            clearInterval(fadeIn);
+            newAudio.volume = options.volume || 1.0;
+          } else {
+            newAudio.volume += fadeInVolume;
+            fadeInStep++;
+          }
+        }, fadeInInterval);
+
+        return newAudio;
+      },
+      "WRAPPER"
+    );
+    console.log("Crossfade Module | AudioHelper.prototype.play hooked successfully");
+  } catch (err) {
+    console.error("Crossfade Module | Failed to hook AudioHelper.prototype.play", err);
+  }
+});
