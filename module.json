@@ -12,6 +12,6 @@
   "languages": [],
   "packs": [],
   "url": "https://your-repository-link.com",
-  "manifest": "https://your-repository-link.com/module.json",
+  "manifest": "https://github.com/GeanoFee/FVTT-Crossfade-Module/module.json",
   "download": "https://your-repository-link.com/crossfade-module.zip"
 }
