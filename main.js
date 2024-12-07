@@ -23,7 +23,7 @@ Hooks.once("init", () => {
   // Overwrite playlist sound handling
  libWrapper.register(
   "crossfade-module",
-  "PlaylistSound.prototype.play",
+  "AudioHelper.prototype.play",
   async function (wrapped, ...args) {
     try {
       console.log("Crossfade Module | Starting play method..."); // Debugging: Meldung, dass die Funktion startet
