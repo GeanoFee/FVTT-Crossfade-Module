@@ -60,29 +60,6 @@ Hooks.once("init", () => {
   "MIXED"
 );
 
-
-      // Fade in the track
-      audio.volume = 0;
-      audio.play();
-      fadeVolume(audio, 0, this.volume, fadeDuration);
-
-      // Handle loop crossfade
-      audio.addEventListener("ended", () => {
-        fadeVolume(audio, this.volume, 0, fadeDuration, () => {
-          audio.currentTime = 0;
-          audio.play();
-          fadeVolume(audio, 0, this.volume, fadeDuration);
-        });
-      });
-
-      return Promise.resolve();
-    },
-    "MIXED"
-  );
-
-  console.log("Crossfade Module | Initialized.");
-});
-
 // Fade volume utility
 function fadeVolume(audio, start, end, duration, onComplete) {
   const step = (end - start) / (duration * 10);
